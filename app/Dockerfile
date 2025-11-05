@@ -6,14 +6,29 @@ LABEL maintainer="docente@example.org"
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# instalar utilidades mínimas
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# SOLUCIÓN: Configurar mirrors confiables y manejar reintentos
+RUN echo 'deb http://deb.debian.org/debian bullseye main' > /etc/apt/sources.list && \
+    echo 'deb http://security.debian.org/debian-security bullseye-security main' >> /etc/apt/sources.list
+
+# SOLUCIÓN: Mejorar la instalación con reintentos y --fix-missing
+RUN apt-get update --fix-missing || apt-get update --fix-missing
+
+# SOLUCIÓN: Instalación con manejo de errores
+RUN apt-get install -y --no-install-recommends \
     build-essential \
     default-libmysqlclient-dev \
     pkg-config \
     curl \
     bash \
-  && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* || \
+    (apt-get update --fix-missing && \
+     apt-get install -y --no-install-recommends \
+        build-essential \
+        default-libmysqlclient-dev \
+        pkg-config \
+        curl \
+        bash \
+    && rm -rf /var/lib/apt/lists/*)
 
 # crear usuario no-root
 RUN useradd --create-home --shell /bin/bash appuser
